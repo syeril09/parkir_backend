@@ -1,0 +1,58 @@
+const mysql = require('mysql2/promise');
+require('dotenv').config();
+
+// Buat pool connection ke database (only valid mysql2 options)
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'db_parkir1',
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+// Export state flags
+let dbTested = false;
+let dbReady = false;
+
+// Try to connect with retry logic
+const testConnectionWithRetry = async (retries = 5, delayMs = 2000) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const conn = await pool.getConnection();
+      conn.release();
+      dbReady = true;
+      dbTested = true;
+      console.log(`✓ Database terhubung (attempt ${attempt}/${retries})`);
+      return true;
+    } catch (err) {
+      console.warn(`⚠️  Database connect attempt ${attempt} failed: ${err.message}`);
+      if (attempt < retries) {
+        console.log(`   Menunggu ${delayMs}ms before retry...`);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, delayMs));
+      } else {
+        dbReady = false;
+        dbTested = true;
+        console.error('✗ Gagal terhubung ke database setelah beberapa percobaan.');
+        console.error('  - Periksa MySQL server sedang berjalan');
+        console.error('  - Periksa kredensial di backend/.env');
+        console.error('  - Jalankan SQL schema: mysql -u root < backend/config/database-schema.sql');
+        return false;
+      }
+    }
+  }
+};
+
+// Jalankan test async (tidak mem-blok startup)
+testConnectionWithRetry().catch((e) => {
+  console.error('Unexpected error during DB test:', e.message);
+  dbReady = false;
+  dbTested = true;
+});
+
+module.exports = pool;
+module.exports.isReady = () => dbReady;
+module.exports.isTested = () => dbTested;
