@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum role {
+  admin
+  petugas
+  owner
+}
+
+enum jenis_area {
+  mobil
+  bus
+  motor
+}
+
+enum status {
+  parkir
+  selesai
+}
+
+enum metode_pembayaran {
+  cash
+  qris
+}
+
+model users {
+  id         Int      @id @default(autoincrement())
+  nama       String
+  username   String   @unique
+  password   String
+  role       role
+  email      String?  @unique
+  no_telp    String?
+  aktif      Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  petugas_masuk  transaksi_parkir[] @relation("petugasMasuk")
+  petugas_keluar transaksi_parkir[] @relation("petugasKeluar")
+  log_aktivitas  log_aktivitas[]
+
+  @@map("users")
+}
+
+model area_parkir {
+  id            Int              @id @default(autoincrement())
+  nama_area     String           @unique
+  jenis_area    jenis_area
+  lokasi        String?
+  kapasitas     Int
+  harga_per_jam Decimal          @db.Decimal(10, 2)
+  deskripsi     String?
+  created_at    DateTime         @default(now())
+  updated_at    DateTime         @updatedAt
+
+  tarif         tarif_parkir[]
+  transaksi     transaksi_parkir[]
+
+  @@map("area_parkir")
+}
+
+model jenis_kendaraan {
+  id         Int             @id @default(autoincrement())
+  nama_jenis String          @unique
+  created_at DateTime        @default(now())
+
+  kendaraan  kendaraan[]
+  tarif      tarif_parkir[]
+
+  @@map("jenis_kendaraan")
+}
+
+model tarif_parkir {
+  id                 Int      @id @default(autoincrement())
+  jenis_kendaraan_id Int
+  area_parkir_id     Int?
+  tarif_per_jam      Decimal  @db.Decimal(10, 2)
+  tarif_per_hari     Decimal? @db.Decimal(10, 2)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  jenis_kendaraan jenis_kendaraan @relation(fields: [jenis_kendaraan_id], references: [id])
+  area_parkir     area_parkir?    @relation(fields: [area_parkir_id], references: [id])
+
+  @@unique([jenis_kendaraan_id], name: "unique_tarif")
+  @@map("tarif_parkir")
+}
+
+model kendaraan {
+  id                  Int      @id @default(autoincrement())
+  plat_nomor          String   @unique
+  jenis_kendaraan_id  Int
+  pemilik_nama        String?
+  pemilik_no_telp     String?
+  warna               String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  jenis_kendaraan jenis_kendaraan @relation(fields: [jenis_kendaraan_id], references: [id])
+  transaksi       transaksi_parkir[]
+
+  @@map("kendaraan")
+}
+
+model transaksi_parkir {
+  id                 Int       @id @default(autoincrement())
+  kendaraan_id       Int
+  area_parkir_id     Int
+  petugas_masuk_id   Int
+  waktu_masuk        DateTime
+  petugas_keluar_id  Int?
+  waktu_keluar       DateTime?
+  durasi_jam         Int?
+  tarif_per_jam      Decimal?  @db.Decimal(10, 2)
+  total_bayar        Decimal?  @db.Decimal(10, 2)
+  status             status    @default(parkir)
+  metode_pembayaran  metode_pembayaran?
+  uang_diterima      Decimal?  @db.Decimal(10, 2)
+  kembalian          Decimal?  @db.Decimal(10, 2)
+  waktu_pembayaran   DateTime?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+
+  kendaraan       kendaraan @relation(fields: [kendaraan_id], references: [id])
+  area_parkir     area_parkir @relation(fields: [area_parkir_id], references: [id])
+  petugas_masuk   users @relation("petugasMasuk", fields: [petugas_masuk_id], references: [id])
+  petugas_keluar  users? @relation("petugasKeluar", fields: [petugas_keluar_id], references: [id])
+
+  @@map("transaksi_parkir")
+}
+
+model log_aktivitas {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  aktivitas       String
+  tabel_terkait   String?
+  id_record       Int?
+  waktu_aktivitas DateTime @default(now())
+
+  user users @relation(fields: [user_id], references: [id])
+
+  @@map("log_aktivitas")
+}

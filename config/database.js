@@ -3,10 +3,10 @@ require('dotenv').config();
 
 // Buat pool connection ke database (only valid mysql2 options)
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'db_parkir1',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
   waitForConnections: true,
   connectionLimit: 10,
@@ -31,7 +31,6 @@ const testConnectionWithRetry = async (retries = 5, delayMs = 2000) => {
       console.warn(`⚠️  Database connect attempt ${attempt} failed: ${err.message}`);
       if (attempt < retries) {
         console.log(`   Menunggu ${delayMs}ms before retry...`);
-        // eslint-disable-next-line no-await-in-loop
         await new Promise((r) => setTimeout(r, delayMs));
       } else {
         dbReady = false;
