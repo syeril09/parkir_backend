@@ -18,27 +18,36 @@ let dbTested = false;
 let dbReady = false;
 
 // Try to connect with retry logic
-const testConnectionWithRetry = async (retries = 5, delayMs = 2000) => {
+// Reduce noisy logs in production to avoid platform rate limits.
+const testConnectionWithRetry = async (retries = 5, delayMs = 3000) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const conn = await pool.getConnection();
       conn.release();
       dbReady = true;
       dbTested = true;
-      console.log(`✓ Database terhubung (attempt ${attempt}/${retries})`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`✓ Database terhubung (attempt ${attempt}/${retries})`);
+      }
       return true;
     } catch (err) {
-      console.warn(`⚠️  Database connect attempt ${attempt} failed: ${err.message}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`⚠️  Database connect attempt ${attempt} failed: ${err.message}`);
+      }
       if (attempt < retries) {
-        console.log(`   Menunggu ${delayMs}ms before retry...`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`   Menunggu ${delayMs}ms before retry...`);
+        }
         await new Promise((r) => setTimeout(r, delayMs));
       } else {
         dbReady = false;
         dbTested = true;
-        console.error('✗ Gagal terhubung ke database setelah beberapa percobaan.');
-        console.error('  - Periksa MySQL server sedang berjalan');
-        console.error('  - Periksa kredensial di backend/.env');
-        console.error('  - Jalankan SQL schema: mysql -u root < backend/config/database-schema.sql');
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('✗ Gagal terhubung ke database setelah beberapa percobaan.');
+          console.error('  - Periksa MySQL server sedang berjalan');
+          console.error('  - Periksa kredensial di backend/.env');
+          console.error('  - Jalankan SQL schema: mysql -u root < backend/config/database-schema.sql');
+        }
         return false;
       }
     }

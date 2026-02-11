@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-console.log('\n📋 Loading environment variables...');
-console.log(`   PORT: ${process.env.PORT || 5000}`);
-console.log(`   DB_HOST: ${process.env.DB_HOST || 'localhost'}`);
-console.log(`   DB_NAME: ${process.env.DB_NAME || 'db_parkir1'}\n`);
+if (process.env.NODE_ENV !== 'production') {
+  console.log('\n📋 Loading environment variables...');
+  console.log(`   PORT: ${process.env.PORT || 5000}`);
+  console.log(`   DB_HOST: ${process.env.DB_HOST || 'localhost'}`);
+  console.log(`   DB_NAME: ${process.env.DB_NAME || 'db_parkir1'}\n`);
+}
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
