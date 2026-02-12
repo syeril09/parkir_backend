@@ -19,6 +19,7 @@ const logAktivitasRoutes = require('./routes/logAktivitasRoutes');
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
 const logActivity = require('./middleware/logActivity');
+const { prisma } = require('./config/database'); // UBAH KE INI
 
 // Inisialisasi Express
 const app = express();
