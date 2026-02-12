@@ -2,12 +2,10 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-if (process.env.NODE_ENV !== 'production') {
-  console.log('\n📋 Loading environment variables...');
-  console.log(`   PORT: ${process.env.PORT || 5000}`);
-  console.log(`   DB_HOST: ${process.env.DB_HOST || 'localhost'}`);
-  console.log(`   DB_NAME: ${process.env.DB_NAME || 'db_parkir1'}\n`);
-}
+console.log('\n📋 Loading environment variables...');
+console.log(`   PORT: ${process.env.PORT || 5000}`);
+console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`   Database connecting...\n`);
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -112,18 +110,16 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// Start server immediately - database test runs in background
+// Start server immediately
 app.listen(PORT, () => {
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`
+  console.log(`
 ╔═══════════════════════════════════════════════╗
 ║   APLIKASI PARKIR - BACKEND SERVER            ║
-║   Server berjalan di http://localhost:${PORT}  ║
-║   Environment: ${process.env.NODE_ENV}         ║
+║   ✅ Server running on port ${PORT}            ║
+║   Environment: ${process.env.NODE_ENV || 'development'}         ║
 ║   Database connecting in background...        ║
 ╚═══════════════════════════════════════════════╝
-    `);
-  }
+  `);
 });
 
 // Test database connection in background (non-blocking)
