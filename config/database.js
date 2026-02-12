@@ -17,9 +17,9 @@ const pool = mysql.createPool({
 let dbTested = false;
 let dbReady = false;
 
-// Try to connect with retry logic
+// Try to connect with retry logic (non-blocking - don't block startup)
 // Reduce noisy logs in production to avoid platform rate limits.
-const testConnectionWithRetry = async (retries = 5, delayMs = 3000) => {
+const testConnectionWithRetry = async (retries = 3, delayMs = 1000) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const conn = await pool.getConnection();
