@@ -1,4 +1,7 @@
 const mysql = require('mysql2/promise');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
 require('dotenv').config();
 
 // Buat pool connection ke database (only valid mysql2 options)
@@ -64,3 +67,21 @@ testConnectionWithRetry().catch((e) => {
 module.exports = pool;
 module.exports.isReady = () => dbReady;
 module.exports.isTested = () => dbTested;
+
+async function connectWithRetry(retries = 5, delay = 3000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log(`Attempting DB connect (${i+1}/${retries})...`);
+      await prisma.$connect();
+      console.log('🟢 Prisma: Database connected');
+      return prisma;
+    } catch (err) {
+      console.error(`Prisma connect attempt ${i+1} failed: ${err.message}`);
+      if (i < retries - 1) await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  console.warn('⚠️ Prisma: All connect attempts failed — continuing without blocking startup.');
+  return prisma;
+}
+
+connectWithRetry();

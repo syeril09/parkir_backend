@@ -48,6 +48,15 @@ app.use(express.urlencoded({ extended: true }));
 // Activity logging middleware
 app.use(logActivity);
 
+// Add global error handlers for visibility
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION:', err && err.stack ? err.stack : err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err && err.stack ? err.stack : err);
+  // optional: process.exit(1);
+});
+
 // ============================================
 // ROUTES
 // ============================================
@@ -112,14 +121,7 @@ const PORT = process.env.PORT || 5000;
 
 // Start server immediately
 app.listen(PORT, () => {
-  console.log(`
-╔═══════════════════════════════════════════════╗
-║   APLIKASI PARKIR - BACKEND SERVER            ║
-║   ✅ Server running on port ${PORT}            ║
-║   Environment: ${process.env.NODE_ENV || 'development'}         ║
-║   Database connecting in background...        ║
-╚═══════════════════════════════════════════════╝
-  `);
+  console.log(`Server listening on port ${PORT} (env NODE_ENV=${process.env.NODE_ENV})`);
 });
 
 // Test database connection in background (non-blocking)
