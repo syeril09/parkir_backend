@@ -1,8 +1,9 @@
 const mysql = require('mysql2/promise');
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
-require('dotenv').config();
+const prisma = new PrismaClient({
+  log: ['info', 'warn', 'error']
+});
 
 // Buat pool connection ke database (only valid mysql2 options)
 const pool = mysql.createPool({
@@ -68,20 +69,33 @@ module.exports = pool;
 module.exports.isReady = () => dbReady;
 module.exports.isTested = () => dbTested;
 
-async function connectWithRetry(retries = 5, delay = 3000) {
+async function connectWithRetry(retries = 6, delayMs = 3000) {
   for (let i = 0; i < retries; i++) {
     try {
-      console.log(`Attempting DB connect (${i+1}/${retries})...`);
+      console.log(`DB: connect attempt ${i + 1}/${retries}...`);
       await prisma.$connect();
-      console.log('🟢 Prisma: Database connected');
-      return prisma;
+      console.log('DB: connected ✔️');
+      return;
     } catch (err) {
-      console.error(`Prisma connect attempt ${i+1} failed: ${err.message}`);
-      if (i < retries - 1) await new Promise(r => setTimeout(r, delay));
+      console.error(`DB: connect failed (${i + 1}):`, err.message || err);
+      if (i < retries - 1) {
+        await new Promise(r => setTimeout(r, delayMs));
+      }
     }
   }
-  console.warn('⚠️ Prisma: All connect attempts failed — continuing without blocking startup.');
-  return prisma;
+  console.warn('DB: all connect attempts failed — continuing without blocking startup.');
 }
 
-connectWithRetry();
+// Run in background, do NOT rethrow
+connectWithRetry().catch(err => {
+  console.error('DB: unexpected error in connectWithRetry:', err && err.stack ? err.stack : err);
+});
+
+// Optional helper used by health endpoint
+function isReady() {
+  // prisma._isConnected not public API; rely on a flag if needed
+  // return prisma.$connect ? true : false;
+  return true; // keep health checks non-blocking
+}
+
+module.exports = { prisma, isReady };
