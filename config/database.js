@@ -1,32 +1,25 @@
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient({
-  log: ['info', 'warn', 'error']
-});
+console.log('📦 Loading Prisma Client...');
 
-async function connectWithRetry(retries = 6, delayMs = 3000) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      console.log(`DB: connect attempt ${i + 1}/${retries}...`);
-      await prisma.$connect();
-      console.log('DB: connected ✔️');
-      return;
-    } catch (err) {
-      console.error(`DB: connect failed (${i + 1}):`, err.message || err);
-      if (i < retries - 1) {
-        await new Promise(r => setTimeout(r, delayMs));
-      }
-    }
+let prisma;
+
+try {
+  prisma = new PrismaClient();
+  console.log('✅ Prisma Client created');
+} catch (err) {
+  console.error('❌ Failed to create Prisma Client:', err.message);
+  process.exit(1);
+}
+
+// Connect in background
+(async () => {
+  try {
+    await prisma.$connect();
+    console.log('🟢 Database connected!');
+  } catch (err) {
+    console.error('⚠️ DB connection failed (non-blocking):', err.message);
   }
-  console.warn('DB: all connect attempts failed — continuing without blocking startup.');
-}
+})();
 
-connectWithRetry().catch(err => {
-  console.error('DB: unexpected error in connectWithRetry:', err && err.stack ? err.stack : err);
-});
-
-function isReady() {
-  return true;
-}
-
-module.exports = { prisma, isReady };
+module.exports = { prisma };
