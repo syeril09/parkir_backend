@@ -1,23 +1,59 @@
 const { PrismaClient } = require('@prisma/client');
 
-console.log('Loading Prisma...');
-console.log('DATABASE_URL:', process.env.DATABASE_URL?.substring(0, 50) + '...');
+console.log('📦 Initializing Prisma Client...');
 
 const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'production' ? ['error'] : ['info', 'warn', 'error'],
+  log: ['error'],
   errorFormat: 'pretty',
 });
 
-console.log('Prisma created, attempting connection...');
+let connected = false;
 
-prisma.$connect()
-  .then(() => {
-    console.log('✅ Database connected successfully!');
-  })
-  .catch(err => {
-    console.error('❌ Database connection failed:', err.message);
-    console.error('Error details:', err);
-    // Don't exit, let app run anyway
-  });
+async function initializeDatabase() {
+  let retries = 0;
+  const maxRetries = 10;
+  const delayMs = 2000;
+
+  while (retries < maxRetries && !connected) {
+    try {
+      console.log(`🔄 Database connect attempt ${retries + 1}/${maxRetries}...`);
+      await prisma.$connect();
+      console.log('✅ Database connected!');
+      connected = true;
+      return;
+    } catch (error) {
+      retries++;
+      console.error(`❌ Connect failed (${retries}/${maxRetries}):`, error.message);
+      
+      if (retries < maxRetries) {
+        console.log(`⏳ Retrying in ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+
+  console.warn('⚠️ Max retries reached - continuing without DB (will retry on request)');
+  
+  // Setup interval retry
+  setInterval(async () => {
+    if (!connected) {
+      try {
+        await prisma.$connect();
+        console.log('✅ Database reconnected!');
+        connected = true;
+      } catch (err) {
+        console.error('⏳ Still waiting for database...');
+      }
+    }
+  }, 5000);
+}
+
+initializeDatabase();
+
+process.on('SIGINT', async () => {
+  console.log('Shutting down...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
 
 module.exports = { prisma };
