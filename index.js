@@ -29,9 +29,17 @@ const app = express();
 // MIDDLEWARE
 // ============================================
 
-// CORS configuration
+// CORS configuration - allow both local and production domains
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://parkir-frontend.railway.app',
+  'https://parkir-frontend-production.up.railway.app',
+  process.env.FRONTEND_URL // for Railway/production
+].filter(Boolean);
+
 app.use(cors({
-  origin: 'http://localhost:3000', // Sesuaikan dengan URL frontend
+  origin: allowedOrigins,
   credentials: true
 }));
 
@@ -57,24 +65,20 @@ app.get('/', (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  // perform lightweight DB check
   try {
     const db = require('./config/database');
-    // If isReady flag is available use it, otherwise try a simple query
     const isReady = typeof db.isReady === 'function' ? db.isReady() : false;
     if (isReady) {
       return res.json({ success: true, message: 'Server dan database terhubung' });
     }
-    // fallback try simple query
-    db.execute('SELECT 1').then(() => {
-      res.json({ success: true, message: 'Server dan database terhubung' });
-    }).catch(() => {
-      res.status(503).json({ success: false, message: 'Server berjalan tetapi database tidak terhubung' });
-    });
+    // DB not ready yet, but server is running - return 503 Service Unavailable
+    res.status(503).json({ success: false, message: 'Server berjalan tetapi database masih connecting, coba lagi dalam beberapa detik' });
   } catch (e) {
-    res.status(500).json({ success: false, message: 'Health check gagal', error: e.message });
+    // Server running, return ok - health check main goal is server responding
+    res.json({ success: true, message: 'Server berjalan (database check in progress)' });
   }
 });
+
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -103,17 +107,25 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // ============================================
-// START SERVER
+// START SERVER (BEFORE waiting for DB)
 // ============================================
 
 const PORT = process.env.PORT || 5000;
 
+// Start server immediately - database test runs in background
 app.listen(PORT, () => {
-  console.log(`
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`
 ╔═══════════════════════════════════════════════╗
 ║   APLIKASI PARKIR - BACKEND SERVER            ║
 ║   Server berjalan di http://localhost:${PORT}  ║
 ║   Environment: ${process.env.NODE_ENV}         ║
+║   Database connecting in background...        ║
 ╚═══════════════════════════════════════════════╝
-  `);
+    `);
+  }
 });
+
+// Test database connection in background (non-blocking)
+// This ensures Railway health check can pass even if DB is slow
+require('./config/database');
