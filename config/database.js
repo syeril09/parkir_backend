@@ -1,25 +1,13 @@
 const { PrismaClient } = require('@prisma/client');
 
-console.log('📦 Loading Prisma Client...');
+console.log('Loading Prisma...');
 
-let prisma;
+const prisma = new PrismaClient();
 
-try {
-  prisma = new PrismaClient();
-  console.log('✅ Prisma Client created');
-} catch (err) {
-  console.error('❌ Failed to create Prisma Client:', err.message);
-  process.exit(1);
-}
+console.log('Prisma created, connecting...');
 
-// Connect in background
-(async () => {
-  try {
-    await prisma.$connect();
-    console.log('🟢 Database connected!');
-  } catch (err) {
-    console.error('⚠️ DB connection failed (non-blocking):', err.message);
-  }
-})();
+prisma.$connect()
+  .then(() => console.log('Database connected!'))
+  .catch(e => console.error('DB connection error:', e.message));
 
 module.exports = { prisma };
