@@ -2,7 +2,10 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+// ALWAYS log ini, bahkan di production
 console.log('✅ dotenv loaded');
+console.log(`📌 NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`📌 PORT: ${process.env.PORT || 5000}`);
 
 // Import routes - with error handling
 let authRoutes, userRoutes, kendaraanRoutes, areaParkirRoutes, tarifParkirRoutes, transaksiParkirRoutes, logAktivitasRoutes;
@@ -148,11 +151,15 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// Start server immediately
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT} (env NODE_ENV=${process.env.NODE_ENV})`);
+  console.log(`
+╔═══════════════════════════════════════════════╗
+║   ✅ SERVER RUNNING                           ║
+║   Port: ${PORT}                                  ║
+║   Environment: ${process.env.NODE_ENV || 'development'}         ║
+║   Database: connecting...                     ║
+╚═══════════════════════════════════════════════╝
+  `);
 });
 
-// Test database connection in background (non-blocking)
-// This ensures Railway health check can pass even if DB is slow
 require('./config/database');
