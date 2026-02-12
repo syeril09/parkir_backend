@@ -2,24 +2,52 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-console.log('\n📋 Loading environment variables...');
-console.log(`   PORT: ${process.env.PORT || 5000}`);
-console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
-console.log(`   Database connecting...\n`);
+console.log('✅ dotenv loaded');
 
-// Import routes
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const kendaraanRoutes = require('./routes/kendaraanRoutes');
-const areaParkirRoutes = require('./routes/areaParkirRoutes');
-const tarifParkirRoutes = require('./routes/tarifParkirRoutes');
-const transaksiParkirRoutes = require('./routes/transaksiParkirRoutes');
-const logAktivitasRoutes = require('./routes/logAktivitasRoutes');
+// Import routes - with error handling
+let authRoutes, userRoutes, kendaraanRoutes, areaParkirRoutes, tarifParkirRoutes, transaksiParkirRoutes, logAktivitasRoutes;
+
+try {
+  console.log('📍 Loading authRoutes...');
+  authRoutes = require('./routes/authRoutes');
+  console.log('✅ authRoutes loaded');
+  
+  console.log('📍 Loading userRoutes...');
+  userRoutes = require('./routes/userRoutes');
+  console.log('✅ userRoutes loaded');
+  
+  console.log('📍 Loading kendaraanRoutes...');
+  kendaraanRoutes = require('./routes/kendaraanRoutes');
+  console.log('✅ kendaraanRoutes loaded');
+  
+  console.log('📍 Loading areaParkirRoutes...');
+  areaParkirRoutes = require('./routes/areaParkirRoutes');
+  console.log('✅ areaParkirRoutes loaded');
+  
+  console.log('📍 Loading tarifParkirRoutes...');
+  tarifParkirRoutes = require('./routes/tarifParkirRoutes');
+  console.log('✅ tarifParkirRoutes loaded');
+  
+  console.log('📍 Loading transaksiParkirRoutes...');
+  transaksiParkirRoutes = require('./routes/transaksiParkirRoutes');
+  console.log('✅ transaksiParkirRoutes loaded');
+  
+  console.log('📍 Loading logAktivitasRoutes...');
+  logAktivitasRoutes = require('./routes/logAktivitasRoutes');
+  console.log('✅ logAktivitasRoutes loaded');
+  
+} catch (err) {
+  console.error('❌ ERROR loading routes:', err.message);
+  console.error(err.stack);
+  process.exit(1);
+}
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
 const logActivity = require('./middleware/logActivity');
-const { prisma } = require('./config/database'); // UBAH KE INI
+const { prisma } = require('./config/database');
+
+console.log('✅ All modules loaded');
 
 // Inisialisasi Express
 const app = express();
